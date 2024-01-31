@@ -1,8 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 
-type Props = {};
-
-export default function Header({}: Props) {
+export default function Header() {
   const navigate = useNavigate();
   return (
     <div className="menu">
@@ -14,6 +12,7 @@ export default function Header({}: Props) {
       >
         FindMovie
       </div>
+      <div className="menu__space"></div>
       <div className="menu__category">
         <NavLink to="/movies">Поиск</NavLink>
         <NavLink to="/favorite">Избранное</NavLink>

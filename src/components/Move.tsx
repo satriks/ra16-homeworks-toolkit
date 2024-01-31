@@ -1,16 +1,16 @@
-import React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
 import { addFavorite, removeFavorite } from "../redux/MoviesSlice";
+import { useAppDispatch, useAppSelector } from "../models/hook";
+import { MovieItem } from "../models/models";
 
-type Props = {};
+type Props = {
+  movie: MovieItem;
+};
 
 export default function Movie({ movie }: Props) {
-  // const favorite = useSelector((state) => state.data.favorite);
-  const favoriteId = useSelector((state) => state.data.favoriteId);
+  const favoriteId = useAppSelector((state) => state.data.favoriteId);
 
   const isFavorite = favoriteId.indexOf(movie.imdbID) != -1;
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   return (
     <div className="movie">

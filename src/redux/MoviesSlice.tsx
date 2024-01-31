@@ -1,22 +1,18 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { Movies } from "../models/models";
+import {
+  Action,
+  createAsyncThunk,
+  createSlice,
+  PayloadAction,
+} from "@reduxjs/toolkit";
+import { DataState, MovieDetail, MovieItem } from "../models/models";
 import axios from "axios";
 
-interface DataState {
-  movies: Movies[];
-  favorite: [];
-  favoriteId: [];
-  movieDetail: null | {};
-  isLoading: boolean;
-  search: string;
-  error: string | null;
-}
 const token = import.meta.env.VITE_TOKEN_OMDB;
 const connect = axios.create({
   baseURL: `http://www.omdbapi.com/?apikey=${token}&`,
 });
 
-const data: DataState = {
+const initialState: DataState = {
   movies: [],
   favorite: [],
   favoriteId: [],
@@ -26,67 +22,55 @@ const data: DataState = {
   search: "",
 };
 
-const setError = (state, action) => {
-  state.isLoading = false;
-  state.error = action.payload;
-  state.search = "";
-};
+interface Answer {
+  res: MovieItem[];
+  search: string;
+}
 
-const removeFromArray = (arr, value) => {
+const removeFromArray = (arr: string[], value: string) => {
   const index = arr.indexOf(value);
   if (index > -1) {
     arr.splice(index, 1);
   }
 };
 
-export const getMovies = createAsyncThunk(
-  "moves/getMoves",
-  async function (search, { rejectWithValue }) {
-    try {
-      console.log(search);
+export const getMovies = createAsyncThunk<
+  Answer,
+  string,
+  { rejectValue: string }
+>("moves/getMoves", async function (search, { rejectWithValue }) {
+  const res = await connect.get(``, { params: { s: search } });
 
-      const res = await connect.get(``, { params: { s: search } });
-
-      if (res.data.Response === "False") {
-        throw new Error(res.data.Error);
-      }
-
-      return { res: res.data.Search, search };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  if (res.data.Response === "False") {
+    return rejectWithValue(res.data.Error);
   }
-);
 
-export const getMoviesDetail = createAsyncThunk(
-  "moves/getMoviesDetail",
-  async function (id, { rejectWithValue }) {
-    try {
-      const res = await connect.get(``, { params: { i: id.id } });
+  return { res: res.data.Search, search };
+});
 
-      if (res.data.Response === "False") {
-        throw new Error(res.data.Error);
-      }
+export const getMoviesDetail = createAsyncThunk<
+  MovieDetail,
+  { id: string },
+  { rejectValue: string }
+>("moves/getMoviesDetail", async function (id, { rejectWithValue }) {
+  const res = await connect.get(``, { params: { i: id.id } });
 
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  if (res.data.Response === "False") {
+    return rejectWithValue(res.data.Error);
   }
-);
+
+  return res.data;
+});
 
 const MovesSlice = createSlice({
   name: "movies",
-  initialState: data,
+  initialState,
   reducers: {
-    addFavorite(state, action) {
+    addFavorite(state, action: PayloadAction<MovieItem>) {
       state.favorite.push(action.payload);
       state.favoriteId.push(action.payload.imdbID);
-      console.log(state.favorite);
     },
-    removeFavorite(state, action) {
-      console.log(action.payload);
-
+    removeFavorite(state, action: PayloadAction<MovieItem>) {
       state.favorite = state.favorite.filter(
         (movie) => movie.imdbID != action.payload.imdbID
       );
@@ -114,11 +98,18 @@ const MovesSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(getMovies.rejected, setError)
-      .addCase(getMoviesDetail.rejected, setError);
+      .addMatcher(isError, (state, action: PayloadAction<string>) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.search = "";
+      });
   },
 });
 
 export const { addFavorite, removeFavorite } = MovesSlice.actions;
 
 export default MovesSlice.reducer;
+
+function isError(action: Action) {
+  return action.type.endsWith("rejected");
+}

@@ -1,6 +1,6 @@
-import React from "react";
-
-type Props = {};
+type Props = {
+  data: { Source: string; Value: string };
+};
 
 export default function Rating({ data }: Props) {
   return (
